@@ -7,7 +7,6 @@ DATA_PATH = ROOT_DIR / "outputs" / "cleaned_debt_dataset.csv"
 
 st.set_page_config(page_title="International Debt Dashboard", layout="wide")
 
-
 @st.cache_data
 def load_data(path: Path) -> pd.DataFrame:
     df = pd.read_csv(path)
