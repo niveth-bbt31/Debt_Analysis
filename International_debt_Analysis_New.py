@@ -12,7 +12,7 @@ DB_PATH = OUTPUT_DIR / "international_debt_analysis.db"
 
 #=====================Read CSv file to DataFrame and clean the data=========================
 raw_df = pd.read_csv(DATASET_PATH, encoding="cp1252")
-raw_df = raw_df.dropna(how="all").copy()  #duplicates removed
+raw_df = raw_df.dropna(how="all").copy()  #null values removed
 raw_df[["Country Name", "Country Code", "Counterpart-Area Name", "Counterpart-Area Code", "Series Name", "Series Code"]] = raw_df[["Country Name", "Country Code", "Counterpart-Area Name", "Counterpart-Area Code", "Series Name", "Series Code"]].fillna("Unknown")
 raw_df.columns = (
     raw_df.columns.astype(str)
@@ -22,12 +22,14 @@ raw_df.columns = (
     .str.strip()
 )
 #------------the year column into clean long-format dataset for analysis and visualization------------------
-year_columns = [str(year) for year in range(2000, 2033)]
-available_years = [col for col in year_columns if col in raw_df.columns]
+year_columns = [str(year) for year in range(2000, 2026)]   #This creates a list of year columns from 2000 to 2025
+available_years = [col for col in year_columns if col in raw_df.columns]  #this keeps only the years in the dataset
+#created new column "Year" and "Debt_Value" to hold the melted values
 for col in available_years:
     raw_df[col] = pd.to_numeric(raw_df[col], errors="coerce")
 raw_df[available_years] = raw_df[available_years].fillna(0)
 
+# Change the column names for the new melted DataFrame from the original DataFrame to match the database schema
 melted_df = raw_df.melt(
     id_vars=["Country_Name", "Country_Code", "CounterpartArea_Name", "CounterpartArea_Code", "Series_Name", "Series_Code"],
     value_vars=available_years,
@@ -90,20 +92,22 @@ country_rows = (
     .rename(columns={"Country_Name": "country_name", "Country_Code": "country_code"})
     .itertuples(index=False, name=None)
 )
-
+#print(country_rows)
 indicator_rows = (
     melted_df[["Series_Name", "Series_Code"]]
     .drop_duplicates()
     .rename(columns={"Series_Name": "series_name", "Series_Code": "series_code"})
     .itertuples(index=False, name=None)
 )
+#print(indicator_rows)
 #-------------------Insert data into the database tables----------------------------
 country_inserts = [(country_name, country_code) for country_name, country_code in country_rows]
 indicator_inserts = [(series_name, series_code) for series_name, series_code in indicator_rows]
-
+#-------------------Inserting  data into the database tables using executemany----------------------------
 conn.executemany("INSERT INTO countries (country_name, country_code) VALUES (?, ?)", country_inserts)
 conn.executemany("INSERT INTO indicators (series_name, series_code) VALUES (?, ?)", indicator_inserts)
 
+#-------------------Create mapping dictionaries for country and indicator IDs----------------------------
 country_map = dict(
     conn.execute("SELECT country_name, country_id FROM countries").fetchall()
 )
@@ -592,8 +596,6 @@ elif page == "Q&A Page":
                 st.subheader("Data Visualization")
                 st.plotly_chart(fig, use_container_width=True)
             else:
-                st.caption(f"Total Rows Returned: {len(ans_dataframe_df)}")
-                st.dataframe(ans_dataframe_df, use_container_width=True)
                 st.info(
                     "This query returns a single summary value or text list, so it is best represented as a table above.")
 
