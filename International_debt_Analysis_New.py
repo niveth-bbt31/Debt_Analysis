@@ -274,33 +274,116 @@ def generate_plotly_chart(q_name: str, df: pd.DataFrame):
         )
         return fig
     # Q17:  total debt for each country and indicator combination.
-    top_ind_df = ans_dataframe_df.head(15).copy()
+    if q_name.startswith("Q17:"):
+        top_ind_df = ans_dataframe_df.head(15).copy()
 
-    # Shorten long indicator names for the Y-axis while keeping full names for hover tooltips
-    top_ind_df["short_name"] = top_ind_df["series_name"].apply(
-        lambda x: x[:45] + "..." if len(str(x)) > 45 else str(x)
-    )
+        # Shorten long indicator names for the Y-axis while keeping full names for hover tooltips
+        top_ind_df["short_name"] = top_ind_df["series_name"].apply(
+            lambda x: x[:45] + "..." if len(str(x)) > 45 else str(x)
+        )
 
-    fig = px.bar(
-        top_ind_df,
-        x="total_debt",
-        y="short_name",
-        orientation="h",
-        color="total_debt",
-        color_continuous_scale="Purples",
-        hover_data={"series_name": True, "short_name": False, "total_debt": ":,.2f"},
-        text_auto=".2s",
-        title="Top 15 Debt Indicators by Total Debt",
-        labels={"total_debt": "Total Debt (USD)", "short_name": "Indicator", "series_name": "Full Indicator Name"}
-    )
+        fig = px.bar(
+            top_ind_df,
+            x="total_debt",
+            y="short_name",
+            orientation="h",
+            color="total_debt",
+            color_continuous_scale="Purples",
+            hover_data={"series_name": True, "short_name": False, "total_debt": ":,.2f"},
+            text_auto=".2s",
+            title="Top 15 Debt Indicators by Total Debt",
+            labels={"total_debt": "Total Debt (USD)", "short_name": "Indicator", "series_name": "Full Indicator Name"}
+        )
 
-    # Put the highest total debt indicator at the top and hide the color legend
-    fig.update_layout(
-        yaxis={"categoryorder": "total ascending"},
-        coloraxis_showscale=False,
-        height=550
-    )
-    return fig
+        # Put the highest total debt indicator at the top and hide the color legend
+        fig.update_layout(
+            yaxis={"categoryorder": "total ascending"},
+            coloraxis_showscale=False,
+            height=550
+        )
+        return fig
+    # Q18:  Count how many indicators each country has
+    if q_name.startswith("Q18:"):
+        top_ind_count_df = ans_dataframe_df.head(10).copy()
+        fig = px.bar(
+            top_ind_count_df,
+            x="indicator_count",
+            y="country_name",
+            orientation="h",
+            color="indicator_count",
+            color_continuous_scale="Mint",
+            text="indicator_count",
+            title="Top 15 Countries by Number of Debt Indicators",
+            labels={"indicator_count": "Number of Indicators", "country_name": "Country"}
+        )
+        fig.update_traces(textposition="outside")
+        fig.update_layout(
+            yaxis={"categoryorder": "total ascending"},
+            coloraxis_showscale=False,
+            height=500
+        )
+        return fig
+    #Q22: Calculate the percentage contribution of each country to the global debt.
+    if q_name.startswith("Q22:"):
+        top_pct_df = ans_dataframe_df.head(10).copy()
+        fig = px.pie(
+            pie_df,
+            names="country_name",
+            values="pct_contribution",
+            hole=0.4,
+            hover_data={"country_debt": ":,.2f"},
+            title="Percentage Contribution to Global Debt (Top 10 vs. Others)",
+            labels={
+                "country_name": "Country",
+                "pct_contribution": "Share (%)",
+                "country_debt": "Total Debt (USD)"
+            }
+        )
+        fig.update_traces(textposition="inside", textinfo="percent+label")
+        fig.update_layout(height=500)
+        return fig
+    #Q26: Categorize countries into debt tiers based on their total debt.
+    if q_name.startswith("Q26:"):
+        fig = px.bar(
+            plot_df,
+            x="total_debt",
+            y="country_name",
+            color="debt_category",
+            orientation="h",
+            title="Top 20 Countries by Total Debt & Debt Tier",
+            labels={
+                "total_debt": "Total Debt (USD)",
+                "country_name": "Country",
+                "debt_category": "Debt Tier"
+            },
+            color_discrete_map={
+                "High Debt": "#EF553B",  # Red
+                "Medium Debt": "#FFA15A",  # Orange
+                "Low Debt": "#00CC96"  # Green
+            },
+            category_orders={"debt_category": ["High Debt", "Medium Debt", "Low Debt"]},
+            hover_data={"total_debt": ":,.2f"}
+        )
+
+        # Place the highest debt country at the top of the chart
+        fig.update_layout(yaxis={"categoryorder": "total ascending"}, height=600)
+        return fig
+    #Q24: Calculate the difference between the maximum and minimum debt values for each country.
+    if q_name.startswith("Q24:"):
+        fig = px.bar(
+            plot_df,
+            x="debt_range",
+            y="country_name",
+            orientation="h",
+            title="Top 20 Countries by Debt Range (Max - Min Debt)",
+            labels={"debt_range": "Debt Difference (USD)", "country_name": "Country"},
+            hover_data={"max_debt": ":,.2f", "min_debt": ":,.2f", "debt_range": ":,.2f"},
+            color="debt_range",
+            color_continuous_scale="Blues"
+        )
+
+        fig.update_layout(yaxis={"categoryorder": "total ascending"}, height=600)
+        return fig
 
 # ======================================================================================================================
 # APPLICATION INTERFACE NAVIGATION
